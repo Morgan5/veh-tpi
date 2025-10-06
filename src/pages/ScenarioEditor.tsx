@@ -49,6 +49,7 @@ const ScenarioEditor: React.FC = () => {
             id: Date.now().toString(),
             title: '',
             description: '',
+            authorId: '1',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             scenes: [],
@@ -70,36 +71,40 @@ const ScenarioEditor: React.FC = () => {
             id: id!,
             title: 'L\'Aventure du Château Mystérieux',
             description: 'Une aventure épique dans un château hanté',
+            authorId: '1',
             createdAt: '2024-01-15T10:00:00Z',
             updatedAt: '2024-01-20T14:30:00Z',
             scenes: [
               {
                 id: '1',
+                scenarioId: id!,
                 title: 'Entrée du château',
-                content: 'Vous vous trouvez devant l\'imposante porte du château. Elle est légèrement entrouverte.',
+                text: 'Vous vous trouvez devant l\'imposante porte du château. Elle est légèrement entrouverte.',
                 choices: [
-                  { id: '1', text: 'Entrer par la porte principale', targetSceneId: '2' },
-                  { id: '2', text: 'Contourner le château', targetSceneId: '3' }
+                  { id: '1', fromSceneId: '1', text: 'Entrer par la porte principale', toSceneId: '2' },
+                  { id: '2', fromSceneId: '1', text: 'Contourner le château', toSceneId: '3' }
                 ],
                 position: { x: 100, y: 100 },
                 isStartScene: true
               },
               {
                 id: '2',
+                scenarioId: id!,
                 title: 'Grand hall',
-                content: 'Le grand hall est sombre et poussiéreux. Un escalier mène à l\'étage.',
+                text: 'Le grand hall est sombre et poussiéreux. Un escalier mène à l\'étage.',
                 choices: [
-                  { id: '3', text: 'Monter les escaliers', targetSceneId: '4' },
-                  { id: '4', text: 'Explorer le rez-de-chaussée', targetSceneId: '5' }
+                  { id: '3', fromSceneId: '2', text: 'Monter les escaliers', toSceneId: '4' },
+                  { id: '4', fromSceneId: '2', text: 'Explorer le rez-de-chaussée', toSceneId: '5' }
                 ],
                 position: { x: 300, y: 100 }
               },
               {
                 id: '3',
+                scenarioId: id!,
                 title: 'Jardins',
-                content: 'Les jardins sont envahis par les mauvaises herbes. Vous apercevez une entrée secrète.',
+                text: 'Les jardins sont envahis par les mauvaises herbes. Vous apercevez une entrée secrète.',
                 choices: [
-                  { id: '5', text: 'Utiliser l\'entrée secrète', targetSceneId: '6' }
+                  { id: '5', fromSceneId: '3', text: 'Utiliser l\'entrée secrète', toSceneId: '6' }
                 ],
                 position: { x: 100, y: 300 }
               }
@@ -185,10 +190,13 @@ const ScenarioEditor: React.FC = () => {
   };
 
   const handleAddScene = () => {
+    if (!currentScenario) return;
+    
     const newScene: Scene = {
       id: Date.now().toString(),
+      scenarioId: currentScenario.id,
       title: 'Nouvelle scène',
-      content: '',
+      text: '',
       choices: [],
       position: { x: 200, y: 200 }
     };

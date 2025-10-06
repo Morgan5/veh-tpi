@@ -3,22 +3,27 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Plus, Trash2, Save, Image, Volume2 } from 'lucide-react';
-import { Scene, Scenario } from '../../types';
+import { Scene, Scenario, Asset } from '../../types';
 import Button from '../Common/Button';
+import AssetUploader from '../Common/AssetUploader';
+import AIGenerator from '../Common/AIGenerator';
+import AssetManager from '../AssetManager/AssetManager';
 
 const choiceSchema = z.object({
   id: z.string(),
   text: z.string().min(1, 'Le texte du choix est requis'),
-  targetSceneId: z.string().min(1, 'Une scène cible est requise'),
+  toSceneId: z.string().min(1, 'Une scène cible est requise'),
+  fromSceneId: z.string(),
   condition: z.string().optional()
 });
 
 const sceneSchema = z.object({
   id: z.string(),
+  scenarioId: z.string(),
   title: z.string().min(1, 'Le titre est requis'),
-  content: z.string().min(1, 'Le contenu est requis'),
-  image: z.string().optional(),
-  audio: z.string().optional(),
+  text: z.string().min(1, 'Le contenu est requis'),
+  imageId: z.string().optional(),
+  soundId: z.string().optional(),
   isStartScene: z.boolean(),
   choices: z.array(choiceSchema)
 });
@@ -34,6 +39,10 @@ interface SceneEditorProps {
 
 const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onCancel }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<Asset | undefined>(scene.image);
+  const [selectedSound, setSelectedSound] = useState<Asset | undefined>(scene.sound);
+  const [assetMode, setAssetMode] = useState<'upload' | 'ai' | 'library'>('upload');
+  const [soundMode, setSoundMode] = useState<'upload' | 'ai' | 'library'>('upload');
 
   const {
     register,
@@ -45,13 +54,17 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
     resolver: zodResolver(sceneSchema),
     defaultValues: {
       id: scene.id,
+      scenarioId: scene.scenarioId || scenarios[0]?.id || '',
       title: scene.title,
-      content: scene.content,
-      image: scene.image || '',
-      audio: scene.audio || '',
+      text: scene.text || '',
+      imageId: scene.imageId || '',
+      soundId: scene.soundId || '',
       isStartScene: scene.isStartScene || false,
-      choices: scene.choices.length > 0 ? scene.choices : [
-        { id: Date.now().toString(), text: '', targetSceneId: '', condition: '' }
+      choices: scene.choices.length > 0 ? scene.choices.map(choice => ({
+        ...choice,
+        fromSceneId: scene.id
+      })) : [
+        { id: Date.now().toString(), text: '', toSceneId: '', fromSceneId: scene.id, condition: '' }
       ]
     }
   });
@@ -69,12 +82,18 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
     try {
       const updatedScene: Scene = {
         ...scene,
+        scenarioId: data.scenarioId,
         title: data.title,
-        content: data.content,
-        image: data.image || undefined,
-        audio: data.audio || undefined,
+        text: data.text,
+        imageId: selectedImage?.id,
+        image: selectedImage,
+        soundId: selectedSound?.id,
+        sound: selectedSound,
         isStartScene: data.isStartScene,
-        choices: data.choices.filter(choice => choice.text && choice.targetSceneId)
+        choices: data.choices.filter(choice => choice.text && choice.toSceneId).map(choice => ({
+          ...choice,
+          fromSceneId: scene.id
+        }))
       };
 
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -90,10 +109,13 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
     append({
       id: Date.now().toString(),
       text: '',
-      targetSceneId: '',
+      toSceneId: '',
+      fromSceneId: scene.id,
       condition: ''
     });
   };
+
+  const sceneText = watch('text');
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
@@ -140,46 +162,160 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
           </div>
 
           <div>
-            <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="text" className="block text-sm font-medium text-gray-700 mb-2">
               Contenu narratif
             </label>
             <textarea
-              {...register('content')}
+              {...register('text')}
               rows={4}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="Décrivez ce qui se passe dans cette scène..."
             />
-            {errors.content && (
-              <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>
+            {errors.text && (
+              <p className="mt-1 text-sm text-red-600">{errors.text.message}</p>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
+          {/* Image Asset Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-gray-700">
                 <Image className="h-4 w-4 inline mr-1" />
-                Image (URL ou upload)
+                Image de la scène
               </label>
-              <input
-                {...register('image')}
-                type="text"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="https://example.com/image.jpg"
-              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAssetMode('upload')}
+                  className={`px-3 py-1 text-xs rounded ${
+                    assetMode === 'upload'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAssetMode('library')}
+                  className={`px-3 py-1 text-xs rounded ${
+                    assetMode === 'library'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Bibliothèque
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAssetMode('ai')}
+                  className={`px-3 py-1 text-xs rounded ${
+                    assetMode === 'ai'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  IA Génération
+                </button>
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="audio" className="block text-sm font-medium text-gray-700 mb-2">
-                <Volume2 className="h-4 w-4 inline mr-1" />
-                Audio (URL ou upload)
-              </label>
-              <input
-                {...register('audio')}
-                type="text"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="https://example.com/audio.mp3"
+            {assetMode === 'upload' ? (
+              <AssetUploader
+                type="image"
+                currentAsset={selectedImage}
+                onAssetSelected={setSelectedImage}
+                onRemove={() => setSelectedImage(undefined)}
               />
+            ) : assetMode === 'library' ? (
+              <div className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+                <AssetManager
+                  selectionMode={true}
+                  filterType="image"
+                  onSelectAsset={(asset) => {
+                    setSelectedImage(asset);
+                    setAssetMode('upload'); // Retour au mode upload pour voir la preview
+                  }}
+                />
+              </div>
+            ) : (
+              <AIGenerator
+                type="image"
+                sceneContext={sceneText}
+                onAssetGenerated={setSelectedImage}
+              />
+            )}
+          </div>
+
+          {/* Sound Asset Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                <Volume2 className="h-4 w-4 inline mr-1" />
+                Son/Musique de la scène
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSoundMode('upload')}
+                  className={`px-3 py-1 text-xs rounded ${
+                    soundMode === 'upload'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSoundMode('library')}
+                  className={`px-3 py-1 text-xs rounded ${
+                    soundMode === 'library'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Bibliothèque
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSoundMode('ai')}
+                  className={`px-3 py-1 text-xs rounded ${
+                    soundMode === 'ai'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  IA Génération
+                </button>
+              </div>
             </div>
+
+            {soundMode === 'upload' ? (
+              <AssetUploader
+                type="sound"
+                currentAsset={selectedSound}
+                onAssetSelected={setSelectedSound}
+                onRemove={() => setSelectedSound(undefined)}
+              />
+            ) : soundMode === 'library' ? (
+              <div className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+                <AssetManager
+                  selectionMode={true}
+                  filterType="sound"
+                  onSelectAsset={(asset) => {
+                    setSelectedSound(asset);
+                    setSoundMode('upload'); // Retour au mode upload pour voir la preview
+                  }}
+                />
+              </div>
+            ) : (
+              <AIGenerator
+                type="sound"
+                sceneContext={sceneText}
+                onAssetGenerated={setSelectedSound}
+              />
+            )}
           </div>
 
           <div>
@@ -233,7 +369,7 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
                         Scène cible
                       </label>
                       <select
-                        {...register(`choices.${index}.targetSceneId`)}
+                        {...register(`choices.${index}.toSceneId`)}
                         className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       >
                         <option value="">Sélectionner une scène</option>
@@ -245,9 +381,9 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
                             </option>
                           ))}
                       </select>
-                      {errors.choices?.[index]?.targetSceneId && (
+                      {errors.choices?.[index]?.toSceneId && (
                         <p className="mt-1 text-sm text-red-600">
-                          {errors.choices[index]?.targetSceneId?.message}
+                          {errors.choices[index]?.toSceneId?.message}
                         </p>
                       )}
                     </div>

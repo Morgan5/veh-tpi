@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { BookOpen, Settings, LogOut, User } from 'lucide-react';
+import { BookOpen, Settings, LogOut, User, FolderOpen } from 'lucide-react';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -35,6 +35,18 @@ const Header: React.FC = () => {
             >
               <BookOpen className="h-4 w-4" />
               <span>Scénarios</span>
+            </Link>
+
+            <Link
+              to="/assets"
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/assets')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <FolderOpen className="h-4 w-4" />
+              <span>Assets</span>
             </Link>
 
             <Link

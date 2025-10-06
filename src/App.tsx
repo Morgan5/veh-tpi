@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ScenarioEditor from './pages/ScenarioEditor';
 import Settings from './pages/Settings';
+import Assets from './pages/Assets';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -60,6 +61,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/scenario/new" element={<ScenarioEditor />} />
               <Route path="/scenario/:id/edit" element={<ScenarioEditor />} />
+              <Route path="/assets" element={<Assets />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>

@@ -37,7 +37,7 @@ const SceneNode: React.FC<{ data: SceneNodeData }> = ({ data }) => {
       </div>
       
       <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-        {scene.content || 'Pas de contenu'}
+        {scene.text || 'Pas de contenu'}
       </p>
       
       <div className="flex items-center justify-between">
@@ -81,12 +81,12 @@ const SceneGraphView: React.FC<SceneGraphViewProps> = ({ scenes, onSceneSelect }
     
     scenes.forEach((scene) => {
       scene.choices.forEach((choice, index) => {
-        const targetScene = scenes.find(s => s.id === choice.targetSceneId);
+        const targetScene = scenes.find(s => s.id === choice.toSceneId);
         if (targetScene) {
           edges.push({
             id: `${scene.id}-${choice.id}`,
             source: scene.id,
-            target: choice.targetSceneId,
+            target: choice.toSceneId,
             label: choice.text,
             style: { stroke: '#3B82F6' },
             labelStyle: { fontSize: '12px', fill: '#374151' }

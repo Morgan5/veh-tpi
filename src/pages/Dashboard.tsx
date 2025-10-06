@@ -22,6 +22,7 @@ const Dashboard: React.FC = () => {
             id: '1',
             title: 'L\'Aventure du Château Mystérieux',
             description: 'Une aventure épique dans un château hanté',
+            authorId: '1',
             createdAt: '2024-01-15T10:00:00Z',
             updatedAt: '2024-01-20T14:30:00Z',
             scenes: [],
@@ -36,6 +37,7 @@ const Dashboard: React.FC = () => {
             id: '2',
             title: 'La Quête du Dragon d\'Or',
             description: 'Partez à la recherche du légendaire dragon d\'or',
+            authorId: '1',
             createdAt: '2024-01-10T09:00:00Z',
             updatedAt: '2024-01-18T16:45:00Z',
             scenes: [],
@@ -144,10 +146,12 @@ const Dashboard: React.FC = () => {
                           <Calendar className="h-4 w-4" />
                           <span>Créé le {formatDate(scenario.createdAt)}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <User className="h-4 w-4" />
-                          <span>{scenario.author.name}</span>
-                        </div>
+                        {scenario.author && (
+                          <div className="flex items-center space-x-1">
+                            <User className="h-4 w-4" />
+                            <span>{scenario.author.name}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">

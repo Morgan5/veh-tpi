@@ -1,36 +1,64 @@
 export interface User {
   id: string;
   email: string;
+  password?: string;
+  role: 'admin' | 'player';
+  name?: string;
+}
+
+export interface Asset {
+  id: string;
+  type: 'image' | 'sound';
   name: string;
-  role: string;
+  url: string;
+  metadata?: Record<string, any>;
+  uploadedBy: string; // User ID
+  createdAt?: string;
+}
+
+export interface Choice {
+  id: string;
+  fromSceneId: string;
+  toSceneId: string;
+  text: string;
+  condition?: string;
+}
+
+export interface Scene {
+  id: string;
+  scenarioId: string;
+  title: string;
+  text: string;
+  imageId?: string; // Asset ID
+  image?: Asset; // Populated asset
+  soundId?: string; // Asset ID
+  sound?: Asset; // Populated asset
+  choices: Choice[];
+  position?: { x: number; y: number };
+  isStartScene?: boolean;
 }
 
 export interface Scenario {
   id: string;
   title: string;
   description?: string;
-  createdAt: string;
-  updatedAt: string;
+  authorId: string;
+  author?: User;
   scenes: Scene[];
-  author: User;
+  createdAt: string;
+  updatedAt?: string;
 }
 
-export interface Scene {
+export interface PlayerProgress {
   id: string;
-  title: string;
-  content: string;
-  image?: string;
-  audio?: string;
-  choices: Choice[];
-  position?: { x: number; y: number };
-  isStartScene?: boolean;
-}
-
-export interface Choice {
-  id: string;
-  text: string;
-  targetSceneId: string;
-  condition?: string;
+  userId: string;
+  scenarioId: string;
+  currentSceneId: string;
+  history: {
+    sceneId: string;
+    choiceId: string;
+    timestamp: string;
+  }[];
 }
 
 export interface AuthState {
