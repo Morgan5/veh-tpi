@@ -131,3 +131,13 @@ export const DELETE_SCENARIO = gql`
     deleteScenario(id: $id)
   }
 `;
+
+export const LOG_USER = gql`
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      token
+      success
+      message
+    }
+  }
+`;
