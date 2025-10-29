@@ -1,33 +1,14 @@
 import { gql } from '@apollo/client';
 
-export const LOGIN_MUTATION = gql`
-  mutation Login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
-      token
-      user {
-        id
-        email
-        name
-        role
-      }
-    }
-  }
-`;
-
 export const GET_SCENARIOS = gql`
-  query GetScenarios {
-    scenarios {
-      id
-      title
-      description
-      createdAt
-      updatedAt
-      author {
-        id
-        name
-      }
-    }
+  query {
+  allScenarios {
+    mongoId
+    title
+    description
+    isPublished
   }
+}
 `;
 
 export const GET_SCENARIO = gql`

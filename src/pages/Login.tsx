@@ -19,7 +19,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [toLog] = useMutation(LOG_USER);
 
@@ -34,7 +33,6 @@ const Login: React.FC = () => {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // Simulation d'authentification - à remplacer par l'appel GraphQL réel
       const response = await toLog({
         variables: { email: data.email, password: data.password },
       });
@@ -47,7 +45,6 @@ const Login: React.FC = () => {
           role: 'admin'
         };
         const mockToken = response.data.login.token;
-        login(data.email, data.password);
         useAuthStore.getState().setUser(mockUser, mockToken);
 
         toast.success('Connexion réussie !');
