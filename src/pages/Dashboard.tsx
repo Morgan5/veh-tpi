@@ -6,59 +6,32 @@ import { Scenario } from '../types';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../store/authStore';
+import { useQuery } from '@apollo/client';
+import { GET_SCENARIOS } from '../graphql/queries';
 
 const Dashboard: React.FC = () => {
   const { scenarios, setScenarios, deleteScenario } = useScenarioStore();
   const [isLoading, setIsLoading] = useState(true);
+  const { data } = useQuery(GET_SCENARIOS);
 
   useEffect(() => {
-    const fetchScenarios = async () => {
-      try {
-        // Simulation de données - à remplacer par l'appel GraphQL
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockScenarios: Scenario[] = [
-          {
-            id: '1',
-            title: 'L\'Aventure du Château Mystérieux',
-            description: 'Une aventure épique dans un château hanté',
-            createdAt: '2024-01-15T10:00:00Z',
-            updatedAt: '2024-01-20T14:30:00Z',
-            scenes: [],
-            author: {
-              id: '1',
-              email: 'admin@example.com',
-              name: 'Admin User',
-              role: 'admin'
-            }
-          },
-          {
-            id: '2',
-            title: 'La Quête du Dragon d\'Or',
-            description: 'Partez à la recherche du légendaire dragon d\'or',
-            createdAt: '2024-01-10T09:00:00Z',
-            updatedAt: '2024-01-18T16:45:00Z',
-            scenes: [],
-            author: {
-              id: '1',
-              email: 'admin@example.com',
-              name: 'Admin User',
-              role: 'admin'
-            }
-          }
-        ];
-        
-        setScenarios(mockScenarios);
-      } catch (error) {
-        toast.error('Erreur lors du chargement des scénarios');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchScenarios();
-  }, [setScenarios]);
-
+    if (data?.allScenarios) {
+      setScenarios(
+        data.allScenarios.map((s: any) => ({
+          id: s.mongoId,
+          title: s.title,
+          description: s.description,
+          createdAt: s.createdAt || new Date().toISOString(),
+          updatedAt: s.updatedAt || new Date().toISOString(),
+          author: { name: 'Admin' }, // temporaire si pas dans ton backend
+          scenes: [],
+        }))
+      );
+      setIsLoading(false);
+    }
+  }, [data]);
+console.log('Scenarios loaded:', scenarios);
   const handleDelete = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce scénario ?')) {
       try {

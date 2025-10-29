@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import { BookOpen, Mail, Lock } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/Common/Button';
+import { LOG_USER } from '../graphql/queries';
+import { useMutation } from '@apollo/client';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -17,8 +19,8 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [toLog] = useMutation(LOG_USER);
 
   const {
     register,
@@ -31,24 +33,28 @@ const Login: React.FC = () => {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // Simulation d'authentification - à remplacer par l'appel GraphQL réel
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock user data
-      const mockUser = {
-        id: '1',
-        email: data.email,
-        name: 'Admin User',
-        role: 'admin'
-      };
-      
-      const mockToken = 'mock-jwt-token';
-      
-      login(data.email, data.password);
-      useAuthStore.getState().setUser(mockUser, mockToken);
-      
-      toast.success('Connexion réussie !');
-      navigate('/dashboard');
+      const response = await toLog({
+        variables: { email: data.email, password: data.password },
+      });
+
+      if (response.data.login.success) {
+        const mockUser = {
+          id: '1',
+          email: data.email,
+          name: 'Admin User',
+          role: 'admin'
+        };
+        const mockToken = response.data.login.token;
+        useAuthStore.getState().setUser(mockUser, mockToken);
+
+        toast.success('Connexion réussie !');
+        navigate('/dashboard');
+      }
+
+      else {
+        toast.error('Erreur de connexion: ' + response.data.login.message);
+      }
+
     } catch (error) {
       toast.error('Erreur de connexion. Vérifiez vos identifiants.');
     } finally {
