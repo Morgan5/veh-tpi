@@ -48,61 +48,29 @@ export const GET_SCENARIO = gql`
 export const CREATE_SCENARIO = gql`
   mutation CreateScenario($input: CreateScenarioInput!) {
     createScenario(input: $input) {
-      id
-      title
-      description
-      createdAt
-      updatedAt
-      scenes {
-        id
+      scenario {
+        mongoId
         title
-        content
-        image
-        audio
-        position {
-          x
-          y
-        }
-        isStartScene
-        choices {
-          id
-          text
-          targetSceneId
-          condition
-        }
+        description
+        isPublished
       }
-      author {
-        id
-        name
-      }
+      success
+      message
     }
   }
 `;
 
 export const UPDATE_SCENARIO = gql`
-  mutation UpdateScenario($id: ID!, $input: UpdateScenarioInput!) {
-    updateScenario(id: $id, input: $input) {
-      id
-      title
-      description
-      scenes {
-        id
+  mutation UpdateScenario($scenarioId: ID!, $input: UpdateScenarioInput!) {
+    updateScenario(scenarioId: $scenarioId, input: $input) {
+      scenario {
+        mongoId
         title
-        content
-        image
-        audio
-        position {
-          x
-          y
-        }
-        isStartScene
-        choices {
-          id
-          text
-          targetSceneId
-          condition
-        }
+        description
+        isPublished
       }
+      success
+      message
     }
   }
 `;
