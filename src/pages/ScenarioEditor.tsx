@@ -11,6 +11,9 @@ import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import SceneGraphView from '../components/ScenarioEditor/SceneGraphView';
 import SceneEditor from '../components/ScenarioEditor/SceneEditor';
+import { useQuery } from '@apollo/client';
+import { GET_SCENARIO_BY_ID } from '../graphql/queries';
+import { mapScenarioFromGraphQL } from '../utils/dataMapping';
 
 const scenarioSchema = z.object({
   title: z.string().min(3, 'Le titre doit contenir au moins 3 caractères'),
@@ -27,8 +30,11 @@ const ScenarioEditor: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedScene, setSelectedScene] = useState<Scene | null>(null);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
-
   const isNew = id === 'new';
+  const { data, loading, error } = useQuery(GET_SCENARIO_BY_ID, {
+    skip: !id || isNew,
+    variables: { scenarioId: id }
+  });
 
   const {
     register,
@@ -40,91 +46,36 @@ const ScenarioEditor: React.FC = () => {
   });
 
   useEffect(() => {
-    const loadScenario = async () => {
-      setIsLoading(true);
-      try {
-        if (isNew) {
-          // Nouveau scénario
-          const newScenario: Scenario = {
-            id: Date.now().toString(),
-            title: '',
-            description: '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            scenes: [],
-            author: {
-              id: '1',
-              email: 'admin@example.com',
-              name: 'Admin User',
-              role: 'admin'
-            }
-          };
-          setCurrentScenario(newScenario);
-          reset({ title: '', description: '' });
-        } else {
-          // Simulation de chargement - à remplacer par l'appel GraphQL
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Mock scenario data
-          const mockScenario: Scenario = {
-            id: id!,
-            title: 'L\'Aventure du Château Mystérieux',
-            description: 'Une aventure épique dans un château hanté',
-            createdAt: '2024-01-15T10:00:00Z',
-            updatedAt: '2024-01-20T14:30:00Z',
-            scenes: [
-              {
-                id: '1',
-                title: 'Entrée du château',
-                content: 'Vous vous trouvez devant l\'imposante porte du château. Elle est légèrement entrouverte.',
-                choices: [
-                  { id: '1', text: 'Entrer par la porte principale', targetSceneId: '2' },
-                  { id: '2', text: 'Contourner le château', targetSceneId: '3' }
-                ],
-                position: { x: 100, y: 100 },
-                isStartScene: true
-              },
-              {
-                id: '2',
-                title: 'Grand hall',
-                content: 'Le grand hall est sombre et poussiéreux. Un escalier mène à l\'étage.',
-                choices: [
-                  { id: '3', text: 'Monter les escaliers', targetSceneId: '4' },
-                  { id: '4', text: 'Explorer le rez-de-chaussée', targetSceneId: '5' }
-                ],
-                position: { x: 300, y: 100 }
-              },
-              {
-                id: '3',
-                title: 'Jardins',
-                content: 'Les jardins sont envahis par les mauvaises herbes. Vous apercevez une entrée secrète.',
-                choices: [
-                  { id: '5', text: 'Utiliser l\'entrée secrète', targetSceneId: '6' }
-                ],
-                position: { x: 100, y: 300 }
-              }
-            ],
-            author: {
-              id: '1',
-              email: 'admin@example.com',
-              name: 'Admin User',
-              role: 'admin'
-            }
-          };
-          
-          setCurrentScenario(mockScenario);
-          reset({ title: mockScenario.title, description: mockScenario.description });
-        }
-      } catch (error) {
-        toast.error('Erreur lors du chargement du scénario');
-        navigate('/dashboard');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setIsLoading(loading);
+  }, [loading]);
 
-    loadScenario();
-  }, [id, isNew, setCurrentScenario, reset, navigate]);
+  useEffect(() => {
+    if (!id || isNew) {
+      const newScenario: Scenario = {
+        id: Date.now().toString(),
+        title: "",
+        description: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        scenes: [],
+        author: {
+          id: "1",
+          email: "admin@example.com",
+          name: "Admin User",
+          role: "admin"
+        }
+      };
+      setCurrentScenario(newScenario);
+      reset({ title: "", description: "" });
+    } else if (data?.scenarioById) {
+      const scenario = mapScenarioFromGraphQL(data.scenarioById);
+      setCurrentScenario(scenario);
+      reset({ title: scenario.title, description: scenario.description });
+    } else if (error) {
+      toast.error("Erreur lors du chargement du scénario");
+      navigate("/dashboard");
+    }
+  }, [id, isNew, data, error, setCurrentScenario, reset, navigate]);
 
   const onSubmit = async (data: ScenarioFormData) => {
     if (!currentScenario) return;
@@ -150,7 +101,7 @@ const ScenarioEditor: React.FC = () => {
       }
 
       setCurrentScenario(updatedScenario);
-      
+
       if (isNew) {
         navigate(`/scenario/${updatedScenario.id}/edit`);
       }
@@ -192,7 +143,7 @@ const ScenarioEditor: React.FC = () => {
       choices: [],
       position: { x: 200, y: 200 }
     };
-    
+
     setSelectedScene(newScene);
     setShowSceneEditor(true);
   };

@@ -122,3 +122,29 @@ export const LOG_USER = gql`
     }
   }
 `;
+export const GET_SCENARIO_BY_ID = gql`
+  query GetScenarioById($scenarioId: ID!) {
+    scenarioById(scenarioId: $scenarioId) {
+      mongoId
+      title
+      description
+      createdAt
+      updatedAt
+      scenesList {
+        mongoId
+        title
+        text
+        isStartScene
+        choices {
+          mongoId
+          text
+          condition
+          toSceneId {
+            mongoId
+            title
+          }
+        }
+      }
+    }
+  }
+`;

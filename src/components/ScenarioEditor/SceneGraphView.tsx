@@ -16,6 +16,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { Scene } from '../../types';
 import { Play, Plus } from 'lucide-react';
+import { computeScenePositions } from '../../utils/postionComputing';
 
 interface SceneNodeData {
   scene: Scene;
@@ -28,18 +29,18 @@ const SceneNode: React.FC<{ data: SceneNodeData }> = ({ data }) => {
   return (
     <div className="bg-white border-2 border-gray-200 rounded-lg p-4 min-w-[200px] hover:border-blue-500 transition-colors">
       <Handle type="target" position={Position.Top} />
-      
+
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-medium text-gray-900 truncate">{scene.title}</h3>
         {scene.isStartScene && (
           <Play className="h-4 w-4 text-green-500" />
         )}
       </div>
-      
+
       <p className="text-sm text-gray-600 line-clamp-2 mb-3">
         {scene.content || 'Pas de contenu'}
       </p>
-      
+
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-500">
           {scene.choices.length} choix
@@ -51,7 +52,7 @@ const SceneNode: React.FC<{ data: SceneNodeData }> = ({ data }) => {
           Modifier
         </button>
       </div>
-      
+
       <Handle type="source" position={Position.Bottom} />
     </div>
   );
@@ -68,17 +69,19 @@ interface SceneGraphViewProps {
 
 const SceneGraphView: React.FC<SceneGraphViewProps> = ({ scenes, onSceneSelect }) => {
   const initialNodes: Node[] = useMemo(() => {
+    const computedPositions = computeScenePositions(scenes);
+
     return scenes.map((scene) => ({
       id: scene.id,
       type: 'sceneNode',
-      position: scene.position || { x: 0, y: 0 },
+      position: computedPositions[scene.id] || { x: 0, y: 0 },
       data: { scene, onSelect: onSceneSelect }
     }));
   }, [scenes, onSceneSelect]);
 
   const initialEdges: Edge[] = useMemo(() => {
     const edges: Edge[] = [];
-    
+
     scenes.forEach((scene) => {
       scene.choices.forEach((choice, index) => {
         const targetScene = scenes.find(s => s.id === choice.targetSceneId);
@@ -94,7 +97,7 @@ const SceneGraphView: React.FC<SceneGraphViewProps> = ({ scenes, onSceneSelect }
         }
       });
     });
-    
+
     return edges;
   }, [scenes]);
 

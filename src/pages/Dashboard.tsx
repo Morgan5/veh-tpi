@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Edit, Trash2, Play, Calendar, User } from 'lucide-react';
 import { useScenarioStore } from '../store/scenarioStore';
-import { Scenario } from '../types';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import toast from 'react-hot-toast';
-import { useAuthStore } from '../store/authStore';
 import { useQuery } from '@apollo/client';
 import { GET_SCENARIOS } from '../graphql/queries';
 
@@ -31,7 +29,7 @@ const Dashboard: React.FC = () => {
       setIsLoading(false);
     }
   }, [data]);
-console.log('Scenarios loaded:', scenarios);
+
   const handleDelete = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce scénario ?')) {
       try {
