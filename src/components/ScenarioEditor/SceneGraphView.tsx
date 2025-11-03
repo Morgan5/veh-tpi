@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -103,6 +103,15 @@ const SceneGraphView: React.FC<SceneGraphViewProps> = ({ scenes, onSceneSelect }
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  useEffect(() => {
+    setNodes(initialNodes);
+  }, [initialNodes, setNodes]);
+
+  useEffect(() => {
+    setEdges(initialEdges);
+  }, [initialEdges, setEdges]);
+
 
   const onConnect = useCallback((params: Connection) => {
     setEdges((eds) => addEdge(params, eds));

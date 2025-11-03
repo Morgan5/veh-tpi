@@ -61,3 +61,30 @@ export function computeScenePositions(
 
   return positions;
 }
+
+export function hasCycle(scenes: Scene[]): boolean {
+  const visited = new Set<string>();
+  const stack = new Set<string>();
+
+  const sceneMap = new Map(scenes.map(s => [s.id, s]));
+
+  function dfs(sceneId: string): boolean {
+    if (stack.has(sceneId)) return true; // cycle détecté
+    if (visited.has(sceneId)) return false;
+
+    visited.add(sceneId);
+    stack.add(sceneId);
+
+    const scene = sceneMap.get(sceneId);
+    if (scene) {
+      for (const choice of scene.choices) {
+        if (dfs(choice.targetSceneId)) return true;
+      }
+    }
+
+    stack.delete(sceneId);
+    return false;
+  }
+
+  return scenes.some(scene => dfs(scene.id));
+}

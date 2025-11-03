@@ -14,6 +14,7 @@ import SceneEditor from '../components/ScenarioEditor/SceneEditor';
 import { useQuery } from '@apollo/client';
 import { GET_SCENARIO_BY_ID } from '../graphql/queries';
 import { mapScenarioFromGraphQL } from '../utils/dataMapping';
+import { hasCycle } from '../utils/postionComputing';
 
 const scenarioSchema = z.object({
   title: z.string().min(3, 'Le titre doit contenir au moins 3 caractères'),
@@ -120,9 +121,14 @@ const ScenarioEditor: React.FC = () => {
   const handleSceneUpdate = (updatedScene: Scene) => {
     if (!currentScenario) return;
 
-    const updatedScenes = currentScenario.scenes.map(scene =>
-      scene.id === updatedScene.id ? updatedScene : scene
-    );
+    // Vérifie si la scène existe déjà
+    const exists = currentScenario.scenes.some(scene => scene.id === updatedScene.id);
+
+    const updatedScenes = exists
+      ? currentScenario.scenes.map(scene =>
+        scene.id === updatedScene.id ? updatedScene : scene
+      )
+      : [...currentScenario.scenes, updatedScene]; // si pas trouvé → on ajoute
 
     const updatedScenario: Scenario = {
       ...currentScenario,
@@ -130,10 +136,17 @@ const ScenarioEditor: React.FC = () => {
       updatedAt: new Date().toISOString()
     };
 
+    if (hasCycle(updatedScenes)) {
+      toast.error("Erreur : une boucle a été détectée dans le scénario !");
+      setTimeout(()=>1000)
+      window.location.reload();
+      return;
+    }
     setCurrentScenario(updatedScenario);
     setShowSceneEditor(false);
     setSelectedScene(null);
   };
+
 
   const handleAddScene = () => {
     const newScene: Scene = {
