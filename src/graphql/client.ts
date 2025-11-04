@@ -2,6 +2,7 @@ import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/clien
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { useAuthStore } from '../store/authStore';
+import toast from 'react-hot-toast';
 
 const httpLink = createHttpLink({
   uri: import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:8000/graphql/',
@@ -21,6 +22,9 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path }) => {
       console.error(`GraphQL error: Message: ${message}, Location: ${locations}, Path: ${path}`);
+      if(message === "Authentication required"){
+        window.location.href = "/login"
+      }
     });
   }
   

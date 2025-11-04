@@ -48,61 +48,29 @@ export const GET_SCENARIO = gql`
 export const CREATE_SCENARIO = gql`
   mutation CreateScenario($input: CreateScenarioInput!) {
     createScenario(input: $input) {
-      id
-      title
-      description
-      createdAt
-      updatedAt
-      scenes {
-        id
+      scenario {
+        mongoId
         title
-        content
-        image
-        audio
-        position {
-          x
-          y
-        }
-        isStartScene
-        choices {
-          id
-          text
-          targetSceneId
-          condition
-        }
+        description
+        isPublished
       }
-      author {
-        id
-        name
-      }
+      success
+      message
     }
   }
 `;
 
 export const UPDATE_SCENARIO = gql`
-  mutation UpdateScenario($id: ID!, $input: UpdateScenarioInput!) {
-    updateScenario(id: $id, input: $input) {
-      id
-      title
-      description
-      scenes {
-        id
+  mutation UpdateScenario($scenarioId: ID!, $input: UpdateScenarioInput!) {
+    updateScenario(scenarioId: $scenarioId, input: $input) {
+      scenario {
+        mongoId
         title
-        content
-        image
-        audio
-        position {
-          x
-          y
-        }
-        isStartScene
-        choices {
-          id
-          text
-          targetSceneId
-          condition
-        }
+        description
+        isPublished
       }
+      success
+      message
     }
   }
 `;
@@ -148,3 +116,101 @@ export const GET_SCENARIO_BY_ID = gql`
     }
   }
 `;
+export const CREATE_SCENE = gql`
+  mutation CreateScene($input: CreateSceneInput!) {
+    createScene(input: $input) {
+      scene {
+        mongoId
+        title
+        text
+        order
+        isStartScene
+        isEndScene
+      }
+      success
+      message
+    }
+  }
+`;
+
+export const CREATE_CHOICE = gql`
+  mutation CreateChoice($input: CreateChoiceInput!) {
+    createChoice(input: $input) {
+      choice {
+        mongoId
+        text
+        order
+        fromSceneId {
+          mongoId
+          title
+        }
+        toSceneId {
+          mongoId
+          title
+        }
+      }
+      success
+      message
+    }
+  }
+`;
+
+export const UPDATE_SCENE = gql`
+  mutation UpdateScene($sceneId: ID!, $input: UpdateSceneInput!) {
+    updateScene(sceneId: $sceneId, input: $input) {
+      scene {
+        id
+        mongoId
+        title
+        text
+        order
+        isStartScene
+        isEndScene
+      }
+      success
+      message
+    }
+  }
+`;
+
+export const UPDATE_CHOICE = gql`
+  mutation UpdateChoice($choiceId: ID!, $input: UpdateChoiceInput!) {
+    updateChoice(choiceId: $choiceId, input: $input) {
+      choice {
+        id
+        mongoId
+        text
+        order
+        fromSceneId {
+          mongoId
+          title
+        }
+        toSceneId {
+          mongoId
+          title
+        }
+      }
+      success
+      message
+    }
+  }
+`;
+
+export const DELETE_CHOICE = gql`
+  mutation DeleteChoice($choiceId: ID!) {
+    deleteChoice(choiceId: $choiceId) {
+      success
+      message
+    }
+  }
+`;
+
+export const DELETE_CHOICES = gql`
+  mutation DeleteChoices($choiceIds: [ID!]!) {
+    deleteChoices(choiceIds: $choiceIds) {
+      success
+      message
+    }
+  }
+`;
+

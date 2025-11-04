@@ -11,7 +11,7 @@ import { GET_SCENARIOS } from '../graphql/queries';
 const Dashboard: React.FC = () => {
   const { scenarios, setScenarios, deleteScenario } = useScenarioStore();
   const [isLoading, setIsLoading] = useState(true);
-  const { data } = useQuery(GET_SCENARIOS);
+  const { data, refetch } = useQuery(GET_SCENARIOS);
 
   useEffect(() => {
     if (data?.allScenarios) {
@@ -22,13 +22,18 @@ const Dashboard: React.FC = () => {
           description: s.description,
           createdAt: s.createdAt || new Date().toISOString(),
           updatedAt: s.updatedAt || new Date().toISOString(),
-          author: { name: 'Admin' }, // temporaire si pas dans ton backend
+          author: { name: 'Admin' },
           scenes: [],
         }))
       );
       setIsLoading(false);
     }
   }, [data]);
+
+  useEffect(() => {
+    refetch();
+  }, []);
+
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce scénario ?')) {
