@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { X, Plus, Trash2, Save, Image, Volume2 } from 'lucide-react';
 import { Scene, Scenario } from '../../types';
 import Button from '../Common/Button';
+import toast from 'react-hot-toast';
 
 const choiceSchema = z.object({
   id: z.string(),
@@ -28,12 +29,14 @@ type SceneFormData = z.infer<typeof sceneSchema>;
 interface SceneEditorProps {
   scene: Scene;
   scenarios: Scenario[];
-  onSave: (scene: Scene) => void;
+  onSave: (scene: Scene) => Promise<void>;
   onCancel: () => void;
+  deleteChoice: (choiceId: string[]) => Promise<void>;
 }
 
-const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onCancel }) => {
+const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onCancel, deleteChoice }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [choiceToDelete, setChoiceToDelete] = useState<string[]>([]);
 
   const {
     register,
@@ -51,7 +54,7 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
       audio: scene.audio || '',
       isStartScene: scene.isStartScene || false,
       choices: scene.choices.length > 0 ? scene.choices : [
-        { id: Date.now().toString(), text: '', targetSceneId: '', condition: '' }
+
       ]
     }
   });
@@ -63,6 +66,7 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
 
   const currentScenario = scenarios[0]; // Assuming we're editing the first scenario
   const availableScenes = currentScenario?.scenes || [];
+  const watchedChoices = watch("choices");
 
   const onSubmit = async (data: SceneFormData) => {
     setIsSaving(true);
@@ -76,9 +80,12 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
         isStartScene: data.isStartScene,
         choices: data.choices.filter(choice => choice.text && choice.targetSceneId)
       };
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-      onSave(updatedScene);
+      // for(const choiceId of choiceToDelete){
+      // await deleteChoice(choiceId);
+      // }
+      await deleteChoice(choiceToDelete);
+      await onSave(updatedScene);
+      toast.success('Scène sauvegardée avec succès');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
     } finally {
@@ -88,13 +95,28 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
 
   const addChoice = () => {
     append({
-      id: Date.now().toString(),
+      id: "temp-" + Date.now().toString(),
       text: '',
       targetSceneId: '',
       condition: ''
     });
   };
 
+  const haveStartScene = () => {
+    for (const s of currentScenario.scenes) {
+      if (s.isStartScene && !scene.isStartScene) return true;
+    }
+    return false;
+  }
+
+  const onDeleteChoice = (index: number) => {
+    const choice = watchedChoices[index];
+    const choiceId = choice?.id;
+    if (!choiceId.startsWith("temp-")) {
+      setChoiceToDelete([...choiceToDelete, choiceId]);
+    }
+    remove(index);
+  }
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -133,6 +155,7 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
                   {...register('isStartScene')}
                   type="checkbox"
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  disabled={haveStartScene()}
                 />
                 <span className="text-sm font-medium text-gray-700">Scène de départ</span>
               </label>
@@ -203,7 +226,7 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
                     <h4 className="text-sm font-medium text-gray-700">Choix {index + 1}</h4>
                     <button
                       type="button"
-                      onClick={() => remove(index)}
+                      onClick={() => onDeleteChoice(index)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -253,7 +276,7 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
                     </div>
                   </div>
 
-                  <div className="mt-3">
+                  {/* <div className="mt-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Condition d'apparition (optionnel)
                     </label>
@@ -263,7 +286,7 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
                       className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       placeholder="ex: hasKey === true"
                     />
-                  </div>
+                  </div> */}
                 </div>
               ))}
             </div>

@@ -6,7 +6,7 @@ import { z } from "zod";
 import toast from "react-hot-toast";
 import { Save, ArrowLeft, Plus, Eye } from "lucide-react";
 import { useScenarioStore } from "../store/scenarioStore";
-import { Scenario, Scene } from "../types";
+import { Choice, Scenario, Scene } from "../types";
 import Button from "../components/Common/Button";
 import LoadingSpinner from "../components/Common/LoadingSpinner";
 import SceneGraphView from "../components/ScenarioEditor/SceneGraphView";
@@ -16,6 +16,12 @@ import {
   GET_SCENARIO_BY_ID,
   CREATE_SCENARIO,
   UPDATE_SCENARIO,
+  CREATE_SCENE,
+  CREATE_CHOICE,
+  UPDATE_SCENE,
+  UPDATE_CHOICE,
+  DELETE_CHOICE,
+  DELETE_CHOICES,
 } from "../graphql/queries";
 import { mapScenarioFromGraphQL } from "../utils/dataMapping";
 import { hasCycle } from "../utils/postionComputing";
@@ -35,9 +41,9 @@ const ScenarioEditor: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedScene, setSelectedScene] = useState<Scene | null>(null);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
-  const isNew = id === "new";
-  const { data, loading, error } = useQuery(GET_SCENARIO_BY_ID, {
-    skip: !id || isNew,
+  const isNew = !id || id === "new";
+  const { data, loading, error,refetch } = useQuery(GET_SCENARIO_BY_ID, {
+    skip: isNew,
     variables: { scenarioId: id },
   });
 
@@ -52,6 +58,15 @@ const ScenarioEditor: React.FC = () => {
 
   const [createScenario] = useMutation(CREATE_SCENARIO);
   const [updateScenario] = useMutation(UPDATE_SCENARIO);
+  const [createScene] = useMutation(CREATE_SCENE);
+  const [createChoice] = useMutation(CREATE_CHOICE);
+  const [updateScene] = useMutation(UPDATE_SCENE);
+  const [updateChoice] = useMutation(UPDATE_CHOICE);
+  const [delChoice] = useMutation(DELETE_CHOICES)
+
+  useEffect(()=>{
+    refetch();
+  },[]);
 
   useEffect(() => {
     setIsLoading(loading);
@@ -85,6 +100,91 @@ const ScenarioEditor: React.FC = () => {
     }
   }, [id, isNew, data, error, setCurrentScenario, reset, navigate]);
 
+  const deleteChoice = async (choiceIds: string[]) => {
+    const variables = {
+      choiceIds: choiceIds,
+    };
+    await delChoice({ variables });
+  };
+
+  const saveChoice = async (choice: Choice, fromSceneId: string) => {
+
+    // si le choix n'a pas d'ID, il n'existe pas en base → on le crée
+    if (!choice.id || choice.id.startsWith("temp-")) {
+      let v = {
+        input: {
+          fromSceneId: fromSceneId,
+          toSceneId: choice.targetSceneId,
+          text: choice.text,
+          order: 0,
+          // condition: "{\"score\": 10}", // optionnel
+        }
+      };
+      const res = await createChoice({ variables: v });
+      if (res.data.createChoice.success) {
+        // toast.success("Choix créé avec succès");
+      }
+    }
+    else {
+      let arg = {
+        choiceId: choice.id,
+        input: {
+          text: choice.text,
+          order: 0,
+          toSceneId: choice.targetSceneId,
+        }
+      };
+      const res = await updateChoice({ variables: arg });
+      if (res.data.updateChoice.success) {
+        // toast.success("Choix modifié avec succès");
+      }
+    }
+  }
+  const saveScene = async (scene: Scene, scenarioId: string) => {
+
+    // si la scène n'a pas d'ID, elle n'existe pas en base → on la crée
+    if (!scene.id || scene.id.startsWith("temp-")) {
+      let variables = {
+        input: {
+          scenarioId: scenarioId,
+          title: scene.title,
+          text: scene.content,
+          order: 0,
+          isStartScene: scene.isStartScene || false,
+          isEndScene: false,
+          // imageId: "<ASSET_ID>", // optionnel
+          // soundId: "<ASSET_ID>", // optionnel
+        }
+      };
+      const r = await createScene({ variables });
+      if (r.data.createScene.success) {
+        const createdScene = r.data.createScene.scene;
+        scene.id = createdScene.mongoId;
+        for (const c of scene.choices) {
+          await saveChoice(c, scene.id);
+        }
+        return scene;
+      }
+    }
+    else {
+      const arg = {
+        sceneId: scene.id,
+        input: {
+          title: scene.title,
+          text: scene.content,
+          order: 0,
+          isStartScene: scene.isStartScene || false,
+        }
+      };
+      const r = await updateScene({ variables: arg });
+      if (r.data.updateScene.success) {
+        for (const c of scene.choices) {
+          await saveChoice(c, scene.id);
+        }
+        return scene;
+      }
+    }
+  }
   const onSubmit = async (data: ScenarioFormData) => {
     if (!currentScenario) return;
 
@@ -121,27 +221,17 @@ const ScenarioEditor: React.FC = () => {
           },
         });
       }
-
+      
       if (isNew || !id) {
         if (response.data.createScenario.success) {
           const createdScenario = response.data.createScenario.scenario;
           updatedScenario.id = createdScenario.mongoId;
+
           toast.success("Scénario créé avec succès");
         }
       } else {
         toast.success("Scénario mis à jour avec succès");
       }
-
-      // if (isNew) {
-      //   addScenario(updatedScenario);
-      //   toast.success("Scénario créé avec succès");
-      // } else {
-      //   updateScenario(updatedScenario);
-      //   toast.success("Scénario mis à jour avec succès");
-      // }
-
-      // setCurrentScenario(updatedScenario);
-
       navigate(`/dashboard`);
     } catch (error) {
       toast.error("Erreur lors de la sauvegarde");
@@ -155,25 +245,18 @@ const ScenarioEditor: React.FC = () => {
     setShowSceneEditor(true);
   };
 
-  const handleSceneUpdate = (updatedScene: Scene) => {
+  const handleSceneUpdate = async (updatedScene: Scene) => {
     if (!currentScenario) return;
 
-    // Vérifie si la scène existe déjà
     const exists = currentScenario.scenes.some(
       (scene) => scene.id === updatedScene.id
     );
 
     const updatedScenes = exists
       ? currentScenario.scenes.map((scene) =>
-          scene.id === updatedScene.id ? updatedScene : scene
-        )
-      : [...currentScenario.scenes, updatedScene]; // si pas trouvé → on ajoute
-
-    const updatedScenario: Scenario = {
-      ...currentScenario,
-      scenes: updatedScenes,
-      updatedAt: new Date().toISOString(),
-    };
+        scene.id === updatedScene.id ? updatedScene : scene
+      )
+      : [...currentScenario.scenes, updatedScene];
 
     if (hasCycle(updatedScenes)) {
       toast.error("Erreur : une boucle a été détectée dans le scénario !");
@@ -181,14 +264,40 @@ const ScenarioEditor: React.FC = () => {
       window.location.reload();
       return;
     }
-    setCurrentScenario(updatedScenario);
-    setShowSceneEditor(false);
-    setSelectedScene(null);
+
+    try {
+      const newScene = await saveScene(updatedScene,currentScenario.id);
+      if (!newScene) {
+        toast.error("Échec de l'enregistrement du choix.");
+        return;
+      }
+
+      // Étape 4 : mise à jour du scénario avec la valeur retournée
+      const finalScenes = exists
+        ? currentScenario.scenes.map((scene) =>
+          scene.id === newScene.id ? newScene : scene
+        )
+        : [...currentScenario.scenes, newScene];
+
+      const updatedScenario: Scenario = {
+        ...currentScenario,
+        scenes: finalScenes,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setCurrentScenario(updatedScenario);
+      setShowSceneEditor(false);
+      setSelectedScene(null);
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement :", error);
+      toast.error("Une erreur est survenue lors de l'enregistrement.");
+    }
   };
+
 
   const handleAddScene = () => {
     const newScene: Scene = {
-      id: Date.now().toString(),
+      id: "temp-" + Date.now().toString(),
       title: "Nouvelle scène",
       content: "",
       choices: [],
@@ -236,7 +345,7 @@ const ScenarioEditor: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="secondary" icon={Plus} onClick={handleAddScene}>
+          <Button variant="secondary" icon={Plus} onClick={handleAddScene} disabled={isNew || !id}>
             Ajouter une scène
           </Button>
           <Button
@@ -318,6 +427,7 @@ const ScenarioEditor: React.FC = () => {
             setShowSceneEditor(false);
             setSelectedScene(null);
           }}
+          deleteChoice={deleteChoice}
         />
       )}
     </div>
