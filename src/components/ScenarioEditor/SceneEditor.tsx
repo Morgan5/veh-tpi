@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, Plus, Trash2, Save, Image, Volume2 } from 'lucide-react';
-import { Scene, Scenario } from '../../types';
+import { X, Plus, Trash2, Save, Image, Volume2, Upload, Sparkles } from 'lucide-react';
+import { Scene, Scenario, Asset } from '../../types';
 import Button from '../Common/Button';
+import AssetUploader from '../Common/AssetUploader';
+import AIGenerator from '../Common/AIGenerator';
 import toast from 'react-hot-toast';
 
 const choiceSchema = z.object({
@@ -20,6 +22,8 @@ const sceneSchema = z.object({
   content: z.string().min(1, 'Le contenu est requis'),
   image: z.string().optional(),
   audio: z.string().optional(),
+  imageAssetId: z.string().optional(),
+  audioAssetId: z.string().optional(),
   isStartScene: z.boolean(),
   choices: z.array(choiceSchema)
 });
@@ -37,11 +41,16 @@ interface SceneEditorProps {
 const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onCancel, deleteChoice }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [choiceToDelete, setChoiceToDelete] = useState<string[]>([]);
+  const [showImageUploader, setShowImageUploader] = useState(false);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const [showSoundUploader, setShowSoundUploader] = useState(false);
+  const [showSoundGenerator, setShowSoundGenerator] = useState(false);
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
     watch
   } = useForm<SceneFormData>({
@@ -52,6 +61,8 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
       content: scene.content,
       image: scene.image || '',
       audio: scene.audio || '',
+      imageAssetId: scene.imageAssetId || '',
+      audioAssetId: scene.audioAssetId || '',
       isStartScene: scene.isStartScene || false,
       choices: scene.choices.length > 0 ? scene.choices : [
 
@@ -77,6 +88,8 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
         content: data.content,
         image: data.image || undefined,
         audio: data.audio || undefined,
+        imageAssetId: data.imageAssetId || undefined,
+        audioAssetId: data.audioAssetId || undefined,
         isStartScene: data.isStartScene,
         choices: data.choices.filter(choice => choice.text && choice.targetSceneId)
       };
@@ -117,6 +130,24 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
     }
     remove(index);
   }
+
+  const handleImageAssetSelected = (asset: Asset) => {
+    // Stocker à la fois l'URL (pour affichage) et l'ID (pour sauvegarde)
+    setValue('image', asset.url);
+    setValue('imageAssetId', asset.mongoId);
+    setShowImageUploader(false);
+    setShowImageGenerator(false);
+    toast.success('Image sélectionnée');
+  };
+
+  const handleSoundAssetSelected = (asset: Asset) => {
+    // Stocker à la fois l'URL (pour affichage) et l'ID (pour sauvegarde)
+    setValue('audio', asset.url);
+    setValue('audioAssetId', asset.mongoId);
+    setShowSoundUploader(false);
+    setShowSoundGenerator(false);
+    toast.success('Son sélectionné');
+  };
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -178,30 +209,100 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Image Section */}
             <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Image className="h-4 w-4 inline mr-1" />
-                Image (URL ou upload)
+                Image
               </label>
               <input
                 {...register('image')}
                 type="text"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="https://example.com/image.jpg"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-2"
+                placeholder="URL de l'image ou utilisez les boutons ci-dessous"
               />
+              {/* Champ caché pour stocker l'ID de l'asset */}
+              <input
+                {...register('imageAssetId')}
+                type="hidden"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  icon={Upload}
+                  onClick={() => setShowImageUploader(true)}
+                >
+                  Upload
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  icon={Sparkles}
+                  onClick={() => setShowImageGenerator(true)}
+                >
+                  Générer IA
+                </Button>
+              </div>
+              {watch('image') && (
+                <div className="mt-2">
+                  <img
+                    src={watch('image')}
+                    alt="Preview"
+                    className="max-w-full max-h-32 rounded border border-gray-200"
+                    onError={() => toast.error('Impossible de charger l\'image')}
+                  />
+                </div>
+              )}
             </div>
 
+            {/* Audio Section */}
             <div>
-              <label htmlFor="audio" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Volume2 className="h-4 w-4 inline mr-1" />
-                Audio (URL ou upload)
+                Audio
               </label>
               <input
                 {...register('audio')}
                 type="text"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="https://example.com/audio.mp3"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-2"
+                placeholder="URL de l'audio ou utilisez les boutons ci-dessous"
               />
+              {/* Champ caché pour stocker l'ID de l'asset */}
+              <input
+                {...register('audioAssetId')}
+                type="hidden"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  icon={Upload}
+                  onClick={() => setShowSoundUploader(true)}
+                >
+                  Upload
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  icon={Sparkles}
+                  onClick={() => setShowSoundGenerator(true)}
+                >
+                  Générer IA
+                </Button>
+              </div>
+              {watch('audio') && (
+                <div className="mt-2">
+                  <audio controls className="w-full">
+                    <source src={watch('audio')} type="audio/mpeg" />
+                    Votre navigateur ne supporte pas l'élément audio.
+                  </audio>
+                </div>
+              )}
             </div>
           </div>
 
@@ -310,6 +411,41 @@ const SceneEditor: React.FC<SceneEditorProps> = ({ scene, scenarios, onSave, onC
           </div>
         </form>
       </div>
+
+      {/* Asset Modals */}
+      {showImageUploader && (
+        <AssetUploader
+          type="image"
+          onAssetSelected={handleImageAssetSelected}
+          onCancel={() => setShowImageUploader(false)}
+        />
+      )}
+
+      {showImageGenerator && (
+        <AIGenerator
+          type="image"
+          onAssetGenerated={handleImageAssetSelected}
+          onCancel={() => setShowImageGenerator(false)}
+          sceneContext={watch('content')}
+        />
+      )}
+
+      {showSoundUploader && (
+        <AssetUploader
+          type="sound"
+          onAssetSelected={handleSoundAssetSelected}
+          onCancel={() => setShowSoundUploader(false)}
+        />
+      )}
+
+      {showSoundGenerator && (
+        <AIGenerator
+          type="sound"
+          onAssetGenerated={handleSoundAssetSelected}
+          onCancel={() => setShowSoundGenerator(false)}
+          sceneContext={watch('content')}
+        />
+      )}
     </div>
   );
 };

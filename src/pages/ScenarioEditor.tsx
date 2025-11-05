@@ -20,7 +20,6 @@ import {
   CREATE_CHOICE,
   UPDATE_SCENE,
   UPDATE_CHOICE,
-  DELETE_CHOICE,
   DELETE_CHOICES,
 } from "../graphql/queries";
 import { mapScenarioFromGraphQL } from "../utils/dataMapping";
@@ -152,10 +151,11 @@ const ScenarioEditor: React.FC = () => {
           order: 0,
           isStartScene: scene.isStartScene || false,
           isEndScene: false,
-          // imageId: "<ASSET_ID>", // optionnel
-          // soundId: "<ASSET_ID>", // optionnel
+          imageId: scene.imageAssetId || null, // ID de l'asset image (mongoId)
+          soundId: scene.audioAssetId || null, // ID de l'asset audio (mongoId)
         }
       };
+      console.log('📝 Création de scène avec assets:', { imageId: variables.input.imageId, soundId: variables.input.soundId });
       const r = await createScene({ variables });
       if (r.data.createScene.success) {
         const createdScene = r.data.createScene.scene;
@@ -174,8 +174,11 @@ const ScenarioEditor: React.FC = () => {
           text: scene.content,
           order: 0,
           isStartScene: scene.isStartScene || false,
+          imageId: scene.imageAssetId || null, // ID de l'asset image (mongoId)
+          soundId: scene.audioAssetId || null, // ID de l'asset audio (mongoId)
         }
       };
+      console.log('📝 Mise à jour de scène avec assets:', { imageId: arg.input.imageId, soundId: arg.input.soundId });
       const r = await updateScene({ variables: arg });
       if (r.data.updateScene.success) {
         for (const c of scene.choices) {

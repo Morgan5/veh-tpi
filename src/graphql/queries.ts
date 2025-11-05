@@ -103,6 +103,20 @@ export const GET_SCENARIO_BY_ID = gql`
         title
         text
         isStartScene
+        imageId {
+          mongoId
+          url
+          fullUrl
+          type
+          name
+        }
+        soundId {
+          mongoId
+          url
+          fullUrl
+          type
+          name
+        }
         choices {
           mongoId
           text
@@ -208,6 +222,111 @@ export const DELETE_CHOICE = gql`
 export const DELETE_CHOICES = gql`
   mutation DeleteChoices($choiceIds: [ID!]!) {
     deleteChoices(choiceIds: $choiceIds) {
+      success
+      message
+    }
+  }
+`;
+
+// Asset Queries and Mutations
+export const GET_MY_ASSETS = gql`
+  query MyAssets($typeFilter: String) {
+    myAssets(typeFilter: $typeFilter) {
+      id
+      mongoId
+      type
+      name
+      filename
+      url
+      fileSize
+      fileSizeMb
+      mimeType
+      metadata
+      isPublic
+      createdAt
+      dimensions
+      duration
+    }
+  }
+`;
+
+export const GET_PUBLIC_ASSETS = gql`
+  query PublicAssets($typeFilter: String) {
+    publicAssets(typeFilter: $typeFilter) {
+      id
+      mongoId
+      type
+      name
+      url
+      fileSizeMb
+      metadata
+    }
+  }
+`;
+
+export const GENERATE_ASSET = gql`
+  mutation GenerateAsset(
+    $type: String!
+    $name: String!
+    $description: String
+    $soundType: String
+    $language: String
+    $duration: Int
+  ) {
+    generateAsset(
+      type: $type
+      name: $name
+      description: $description
+      soundType: $soundType
+      language: $language
+      duration: $duration
+    ) {
+      success
+      message
+      asset {
+        id
+        mongoId
+        type
+        name
+        filename
+        url
+        fullUrl
+        fileSize
+        fileSizeMb
+        mimeType
+        metadata
+        isPublic
+        createdAt
+      }
+    }
+  }
+`;
+
+export const CREATE_ASSET = gql`
+  mutation CreateAsset($input: CreateAssetInput!) {
+    createAsset(input: $input) {
+      success
+      message
+      asset {
+        id
+        mongoId
+        type
+        name
+        filename
+        url
+        fileSize
+        mimeType
+        metadata
+        isPublic
+        createdAt
+      }
+    }
+  }
+`;
+
+export const DELETE_ASSET = gql`
+  mutation DeleteAsset($id: ID!) {
+    deleteAsset(id: $id) {
       success
       message
     }

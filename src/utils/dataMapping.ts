@@ -23,8 +23,11 @@ function mapSceneFromGraphQL(scene: any): Scene {
     content: scene.text,
     isStartScene: scene.isStartScene,
     choices: scene.choices.map(mapChoiceFromGraphQL),
-    image: undefined, // à compléter si image_id est exposé
-    audio: undefined, // à compléter si sound_id est exposé
+    // Mapper les assets : URL pour affichage, ID pour sauvegarde
+    image: scene.imageId?.fullUrl || scene.imageId?.url || undefined,
+    audio: scene.soundId?.fullUrl || scene.soundId?.url || undefined,
+    imageAssetId: scene.imageId?.mongoId || undefined,
+    audioAssetId: scene.soundId?.mongoId || undefined,
     position: undefined // à compléter si position est calculée ou stockée
   };
 }

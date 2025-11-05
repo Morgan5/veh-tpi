@@ -19,8 +19,10 @@ export interface Scene {
   id: string;
   title: string;
   content: string;
-  image?: string;
-  audio?: string;
+  image?: string; // URL de l'image (pour affichage)
+  audio?: string; // URL de l'audio (pour affichage)
+  imageAssetId?: string; // ID de l'asset image (pour sauvegarde)
+  audioAssetId?: string; // ID de l'asset audio (pour sauvegarde)
   choices: Choice[];
   position?: { x: number; y: number };
   isStartScene?: boolean;
@@ -49,4 +51,21 @@ export interface ScenarioState {
   addScenario: (scenario: Scenario) => void;
   updateScenario: (scenario: Scenario) => void;
   deleteScenario: (id: string) => void;
+}
+
+export interface Asset {
+  id: string;
+  mongoId: string;
+  type: 'image' | 'sound' | 'video';
+  name: string;
+  filename: string;
+  url: string;
+  fileSize?: number;
+  fileSizeMb?: number;
+  mimeType?: string;
+  metadata?: Record<string, any>;
+  isPublic?: boolean;
+  createdAt?: string;
+  dimensions?: { width?: number; height?: number };
+  duration?: number;
 }
