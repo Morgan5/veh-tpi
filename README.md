@@ -1,153 +1,118 @@
-# Frontend React - Application Narratif Interactif
+# StoryAdmin – Tableau de bord de scénarios interactifs
 
-Interface web pour une application de **livre dont vous êtes le héros**, permettant la création et la navigation à travers des **scénarios**, **scènes** et **choix**.  
-Ce frontend interagit avec le backend Django via une **API GraphQL** pour offrir une expérience narrative interactive.
+StoryAdmin est une application React permettant d’administrer des scénarios narratifs interactifs. Elle propose une authentification par JWT, un éditeur graphique des scènes, ainsi qu’une intégration complète avec une API GraphQL.
 
----
+## Fonctionnalités
+- Authentification administrateur avec gestion de session persistante et redirection automatique.
+- Tableau de bord listant les scénarios, avec filtres visuels, actions de test et suppression contrôlée.
+- Création et édition de scénarios, dont la structure narrative (scènes et choix) est visualisée via un graphe interactif basé sur React Flow.
+- Formulaires intelligents validés par Zod et React Hook Form pour garantir la cohérence des données.
+- Gestion centralisée de l’état (authentification et scénarios) avec Zustand et persistance locale.
+- Notifications utilisateur temps réel (succès/erreur) grâce à React Hot Toast.
 
-## 🚀 Fonctionnalités
+## Stack Technique
+- `React 18` + `TypeScript`
+- `Vite 5` pour le bundling et le développement
+- `React Router 7` pour la navigation et les routes protégées
+- `Apollo Client 3` (GraphQL) + `InMemoryCache`
+- `Tailwind CSS 3` pour le design et les composants UI
+- `React Flow 11` pour la visualisation du graphe de scènes
+- `Zustand 5` pour la gestion d’état, avec middleware de persistance
+- `React Hook Form 7` + `Zod 4` pour les formulaires typés
+- `Lucide React` pour les icônes
 
-- **Authentification** via API GraphQL (connexion, déconnexion, sessions JWT)
-- **Tableau de bord** des scénarios et scènes créés
-- **Éditeur de scénario interactif** :
-  - Création et modification de scénarios
-  - Ajout, suppression et édition de scènes
-  - Liaison de scènes par des **choix** (branches narratives)
-  - Vue graphique du graphe narratif (via `SceneGraphView`)
-- **Protection des routes** selon le rôle utilisateur (admin/joueur)
-- **Interface fluide et moderne** (React + Tailwind)
-- **Intégration complète avec l’API GraphQL Django**
+## Prérequis
+- Node.js ≥ 18.17 (LTS recommandé) et npm ≥ 9
+- Accès à une API GraphQL compatible avec les schémas utilisés (cf. section ci-dessous)
+- Navigateur moderne (Chrome, Firefox, Edge) supportant ES2020
 
----
+## Installation
+1. Cloner le dépôt :
+   ```bash
+   git clone <url-du-repo>
+   cd veh-tpi
+   ```
+2. Installer les dépendances :
+   ```bash
+   npm install
+   ```
+3. Créer un fichier `.env` à la racine avec l’URL du serveur GraphQL :
+   ```bash
+   echo "VITE_GRAPHQL_URL=http://localhost:8000/graphql/" > .env
+   ```
+4. Lancer l’application en mode développement :
+   ```bash
+   npm run dev
+   ```
+5. Ouvrir `http://localhost:5173` et se connecter avec des identifiants valides fournis par votre backend.
 
-## 🛠️ Stack Technique
+## API GraphQL
+L’application consomme plusieurs opérations GraphQL à travers `src/graphql/queries.ts` :
 
-- **React 18 + TypeScript**
-- **Vite** (pour un build rapide et léger)
-- **Apollo Client** (communication GraphQL)
-- **React Router v6**
-- **Tailwind CSS** (design moderne et responsive)
-- **ESLint + Prettier** (qualité de code)
-- **JWT** (authentification sécurisée avec le backend Django)
+- **Authentification** : `login(email, password)` retourne `token`, `success`, `message`.
+- **Scénarios** :
+  - `allScenarios` pour lister les scénarios publiés.
+  - `scenarioById(scenarioId)` pour récupérer la structure complète (scènes et choix).
+  - `createScenario(input)` et `updateScenario(scenarioId, input)` pour la gestion du cycle de vie.
+- **Scènes** : `createScene(input)` et `updateScene(sceneId, input)` gèrent les nœuds narratifs.
+- **Choix** : `createChoice`, `updateChoice`, `deleteChoices` permettent de relier les scènes.
 
----
+Le client Apollo (`src/graphql/client.ts`) ajoute automatiquement le header `Authorization: JWT <token>` si un jeton est présent dans le store d’authentification et gère les erreurs réseau (déconnexion forcée en cas de 401 ou redirection vers `/login`).
 
-## 📂 Structure du projet
+## Application React
+- **Architecture** :
+  - `src/App.tsx` initialise le routeur, Apollo Provider et les routes protégées.
+  - `src/pages` contient les vues métier (`Login`, `Dashboard`, `ScenarioEditor`, `Settings`).
+  - `src/components/ScenarioEditor` englobe le graphe (`SceneGraphView`) et l’éditeur modal (`SceneEditor`).
+  - `src/store` centralise les états `authStore` et `scenarioStore`.
+  - `src/utils` fournit la conversion GraphQL → modèles (`dataMapping`) et la logique de positionnement/cycle (`postionComputing`).
+- **Interface** : Tailwind CSS et des composants réutilisables (bouton, spinner) assurent une cohérence visuelle.
+- **Formulaires** : les validations sont typées, les soumissions asynchrones affichent des toast contextuels.
 
-src/
-├── components/
-│ ├── Common/ # Composants réutilisables
-│ ├── Layout/ # Layout global (header, sidebar, etc.)
-│ └── ScenarioEditor/ # Outils de création et édition de scénarios
-│ ├── SceneEditor.tsx
-│ ├── SceneGraphView.tsx
-│ └── ProtectedRoute.tsx
-│
-├── graphql/
-│ ├── client.ts # Configuration Apollo Client
-│ └── queries.ts # Requêtes et mutations GraphQL
-│
-├── pages/
-│ ├── Dashboard.tsx # Page principale (liste des scénarios)
-│ ├── Login.tsx # Authentification
-│ ├── ScenarioEditor.tsx # Page d’édition des scénarios
-│ └── Settings.tsx # Paramètres utilisateur
-│
-├── store/ # (optionnel) Gestion d’état global
-│
-├── types/
-│ └── index.ts # Types TypeScript globaux
-│
-├── utils/
-│ ├── App.tsx # Point d’entrée de l’application
-│ ├── index.css # Styles globaux
-│ ├── main.tsx # Initialisation React + Router + Apollo
-│ └── vite-env.d.ts # Déclarations d’environnement Vite
-│
-├── index.html
-└── package-lock.json
+## Sécurité
+- Authentification basée sur JWT stocké localement via Zustand + localStorage, avec sérialisation limitée (`partialize`).
+- Routes protégées (`ProtectedRoute`) empêchant l’accès aux pages internes sans authentification.
+- Gestion centralisée des erreurs GraphQL : redirection vers `/login` sur `Authentication required` et purge du store sur 401.
+- Validation côté client (Zod) pour réduire les entrées invalides avant envoi à l’API.
 
----
+## Déploiement
+1. Générer le bundle de production :
+   ```bash
+   npm run build
+   ```
+2. Prévisualiser localement :
+   ```bash
+   npm run preview
+   ```
+3. Déployer le dossier `dist/` sur un serveur web statique.
+4. Configurer la variable d’environnement `VITE_GRAPHQL_URL` sur la plateforme d’hébergement (build et runtime) pour pointer vers l’API GraphQL publique.
 
-## ⚙️ Installation et Lancement
+## Configuration
+- Variables d’environnement :
+  - `VITE_GRAPHQL_URL` (obligatoire) – URL complète de l’endpoint GraphQL.
+- Thème/UI : personnaliser `tailwind.config.js` et `src/index.css`.
+- Icônes et graphes : ajuster `lucide-react` et `ReactFlow` selon vos besoins.
+- Stores : étendre `authStore` et `scenarioStore` pour inclure d’autres attributs (rôles, états supplémentaires, etc.).
 
-### 1️⃣ Cloner le projet
+## Performance
+- Utilisation de `ReactFlow` avec `useMemo` et `useNodesState` pour optimiser le recalcul du graphe.
+- Cache Apollo (`InMemoryCache`) limitant les requêtes répétées.
+- Validation paresseuse des formulaires (React Hook Form) évitant les rendus inutiles.
+- Persistence sélective dans Zustand pour limiter les écritures dans le stockage local.
+- Possibilité d’activer le code-splitting via Vite si l’application s’étend.
 
-```bash
-git clone <repository-url>
-cd veh-tpi-frontend
-```
+## Monitoring et Debug
+- `react-hot-toast` offre un feedback en temps réel sur les actions utilisateur.
+- Activer les DevTools Apollo pour inspecter le cache, les requêtes et les réponses GraphQL.
+- Utiliser les DevTools React/Zustand pour suivre l’état global.
+- Journalisation centralisée des erreurs réseau via `errorLink` (console + redirections).
+- Intégrer des outils externes (Sentry, LogRocket) en ajoutant des links Apollo ou des boundary React.
 
-2️⃣ Installer les dépendances
-npm install
+## Contribution
+1. Forker le dépôt et créer une branche de fonctionnalité (`feature/ma-fonctionnalite`).
+2. Respecter le formatage (`npm run lint`) et ajouter des tests si nécessaire.
+3. Décrire clairement les changements dans les Pull Requests (fonctionnalité, corrections, impacts API).
+4. Synchroniser avec la branche principale avant fusion.
 
-# ou
-
-yarn install
-
-3️⃣ Lancer le serveur de développement
-npm run dev
-
-5173
-
-🔗 Intégration avec le Backend Django
-
-Le front communique avec le backend via Apollo Client configuré dans src/graphql/client.ts.
-
-Exemple de requête GraphQL (Query → SELECT)
-export const GET_SCENARIOS = gql`  query {
-  allScenarios {
-    mongoId
-    title
-    description
-    isPublished
-  }
-}`;
-
-Exemple de mutation (Mutation → INSERT / UPDATE / DELETE)
-export const CREATE_SCENARIO = gql`  mutation CreateScenario($input: CreateScenarioInput!) {
-    createScenario(input: $input) {
-      scenario {
-        mongoId
-        title
-        description
-        isPublished
-      }
-      success
-      message
-    }
-  }`;
-
-## 🎨 Éditeur de Scénario
-
-L’éditeur est le cœur du projet. Il permet aux **créateurs** de concevoir facilement des récits interactifs :
-
-- 🧩 **Création et édition de scénarios**
-- 🖋️ **Ajout, modification et suppression de scènes**
-- 🔀 **Création de choix** reliant plusieurs scènes (branches narratives)
-- 🌐 **Visualisation du graphe narratif** via `SceneGraphView`
-- 💾 **Sauvegarde automatique** via l’API GraphQL
-- 🔒 **Accès protégé** (réservé aux créateurs connectés)
-
-## 🚀 Fonctionnalités principales
-
-✨ **Pour les créateurs**
-
-- Créer et éditer des scénarios
-- Ajouter des scènes et des choix
-- Relier les scènes entre elles de façon interactive
-- Générer des assets visuels et audio pour enrichir l’histoire
-
-🎮 **Pour les joueurs**
-
-- Explorer les scénarios créés
-- Faire des choix qui influencent le déroulement de l’histoire
-- Suivre sa progression et rejouer différentes branches
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
+## Licence
+Ce projet n’inclut pas encore de licence explicite. Ajoutez un fichier `LICENSE` (MIT, Apache 2.0, etc.) selon les besoins de votre organisation avant une distribution publique.
