@@ -33,7 +33,7 @@ Ce frontend interagit avec le backend Django via une **API GraphQL** pour offrir
 ---
 
 ## 📂 Structure du projet
-
+```
 src/
 ├── components/
 │ ├── Common/ # Composants réutilisables
@@ -66,6 +66,7 @@ src/
 │
 ├── index.html
 └── package-lock.json
+```
 
 ---
 
@@ -95,6 +96,7 @@ npm run dev
 Le front communique avec le backend via Apollo Client configuré dans src/graphql/client.ts.
 
 Exemple de requête GraphQL (Query → SELECT)
+```
 export const GET_SCENARIOS = gql`  query {
   allScenarios {
     mongoId
@@ -103,8 +105,10 @@ export const GET_SCENARIOS = gql`  query {
     isPublished
   }
 }`;
+```
 
 Exemple de mutation (Mutation → INSERT / UPDATE / DELETE)
+```
 export const CREATE_SCENARIO = gql`  mutation CreateScenario($input: CreateScenarioInput!) {
     createScenario(input: $input) {
       scenario {
@@ -117,6 +121,7 @@ export const CREATE_SCENARIO = gql`  mutation CreateScenario($input: CreateScena
       message
     }
   }`;
+```
 
 ## 🎨 Éditeur de Scénario
 
