@@ -1,8 +1,12 @@
-import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
+import {
+  ApolloClient,
+  InMemoryCache,
+  createHttpLink,
+  from,
+} from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { useAuthStore } from '../store/authStore';
-import toast from 'react-hot-toast';
 
 const httpLink = createHttpLink({
   uri: import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:8000/graphql/',
@@ -13,25 +17,32 @@ const authLink = setContext((_, { headers }) => {
   return {
     headers: {
       ...headers,
-      authorization: token ? `JWT ${token}` : "",
-    }
+      authorization: token ? `JWT ${token}` : '',
+    },
   };
 });
 
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path }) => {
-      console.error(`GraphQL error: Message: ${message}, Location: ${locations}, Path: ${path}`);
-      if(message === "Authentication required"){
-        window.location.href = "/login"
+      console.error(
+        `GraphQL error: Message: ${message}, Location: ${locations}, Path: ${path}`
+      );
+      if (
+        message === 'Authentication required' ||
+        message.includes('authentication')
+      ) {
+        useAuthStore.getState().logout();
+        window.location.href = '/login';
       }
     });
   }
-  
+
   if (networkError) {
     console.error(`Network error: ${networkError}`);
-    if (networkError.statusCode === 401) {
+    if ('statusCode' in networkError && networkError.statusCode === 401) {
       useAuthStore.getState().logout();
+      window.location.href = '/login';
     }
   }
 });
