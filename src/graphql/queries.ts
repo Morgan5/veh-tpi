@@ -2,13 +2,13 @@ import { gql } from '@apollo/client';
 
 export const GET_SCENARIOS = gql`
   query {
-  allScenarios {
-    mongoId
-    title
-    description
-    isPublished
+    allScenarios {
+      mongoId
+      title
+      description
+      isPublished
+    }
   }
-}
 `;
 
 export const GET_SCENARIO = gql`
@@ -76,8 +76,11 @@ export const UPDATE_SCENARIO = gql`
 `;
 
 export const DELETE_SCENARIO = gql`
-  mutation DeleteScenario($id: ID!) {
-    deleteScenario(id: $id)
+  mutation DeleteScenario($scenarioId: ID!) {
+    deleteScenario(scenarioId: $scenarioId) {
+      success
+      message
+    }
   }
 `;
 
@@ -87,6 +90,18 @@ export const LOG_USER = gql`
       token
       success
       message
+    }
+  }
+`;
+
+export const GET_ME = gql`
+  query GetMe {
+    me {
+      mongoId
+      email
+      role
+      firstName
+      lastName
     }
   }
 `;
@@ -102,7 +117,20 @@ export const GET_SCENARIO_BY_ID = gql`
         mongoId
         title
         text
+        order
         isStartScene
+        imageId {
+          mongoId
+          url
+        }
+        soundId {
+          mongoId
+          url
+        }
+        musicId {
+          mongoId
+          url
+        }
         choices {
           mongoId
           text
@@ -126,6 +154,18 @@ export const CREATE_SCENE = gql`
         order
         isStartScene
         isEndScene
+        imageId {
+          mongoId
+          url
+        }
+        soundId {
+          mongoId
+          url
+        }
+        musicId {
+          mongoId
+          url
+        }
       }
       success
       message
@@ -140,6 +180,7 @@ export const CREATE_CHOICE = gql`
         mongoId
         text
         order
+        condition
         fromSceneId {
           mongoId
           title
@@ -166,6 +207,18 @@ export const UPDATE_SCENE = gql`
         order
         isStartScene
         isEndScene
+        imageId {
+          mongoId
+          url
+        }
+        soundId {
+          mongoId
+          url
+        }
+        musicId {
+          mongoId
+          url
+        }
       }
       success
       message
@@ -181,6 +234,7 @@ export const UPDATE_CHOICE = gql`
         mongoId
         text
         order
+        condition
         fromSceneId {
           mongoId
           title
@@ -214,3 +268,11 @@ export const DELETE_CHOICES = gql`
   }
 `;
 
+export const DELETE_SCENE = gql`
+  mutation DeleteScene($sceneId: ID!) {
+    deleteScene(sceneId: $sceneId) {
+      success
+      message
+    }
+  }
+`;

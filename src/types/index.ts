@@ -19,11 +19,17 @@ export interface Scene {
   id: string;
   title: string;
   content: string;
+  order?: number;
   image?: string;
   audio?: string;
+  music?: string;
   choices: Choice[];
   position?: { x: number; y: number };
   isStartScene?: boolean;
+  // Drapeaux de génération d'assets côté backend (utilisés à la création)
+  autoGenerateImage?: boolean;
+  autoGenerateSound?: boolean;
+  autoGenerateMusic?: boolean;
 }
 
 export interface Choice {

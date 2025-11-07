@@ -1,15 +1,19 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
 import { Toaster } from 'react-hot-toast';
-import { client } from './graphql/client';
-import { useAuthStore } from './store/authStore';
+import {
+  Navigate,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+} from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-import Login from './pages/Login';
+import { client } from './graphql/client';
 import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
 import ScenarioEditor from './pages/ScenarioEditor';
 import Settings from './pages/Settings';
+import { useAuthStore } from './store/authStore';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -40,23 +44,37 @@ function App() {
               },
             }}
           />
-          
+
           <Routes>
-            <Route 
-              path="/login" 
+            <Route
+              path="/login"
               element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
-              } 
+                isAuthenticated ? (
+                  <Navigate to="/dashboard" replace />
+                ) : (
+                  <Login />
+                )
+              }
             />
-            
-            <Route 
-              path="/" 
+
+            <Route
+              path="/"
               element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
-              } 
+                isAuthenticated ? (
+                  <Navigate to="/dashboard" replace />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
             />
-            
-            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+
+            <Route
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/scenario/new" element={<ScenarioEditor />} />
               <Route path="/scenario/:id/edit" element={<ScenarioEditor />} />

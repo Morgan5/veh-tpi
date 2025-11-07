@@ -1,4 +1,4 @@
-import { Choice, Scenario, Scene } from "../types";
+import { Choice, Scenario, Scene } from '../types';
 
 function mapScenarioFromGraphQL(data: any): Scenario {
   return {
@@ -8,12 +8,12 @@ function mapScenarioFromGraphQL(data: any): Scenario {
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     author: {
-      id: "",
-      name: "",
-      email: "",
-      role: ""
+      id: '',
+      name: '',
+      email: '',
+      role: '',
     },
-    scenes: data.scenesList.map(mapSceneFromGraphQL)
+    scenes: data.scenesList.map(mapSceneFromGraphQL),
   };
 }
 function mapSceneFromGraphQL(scene: any): Scene {
@@ -21,19 +21,21 @@ function mapSceneFromGraphQL(scene: any): Scene {
     id: scene.mongoId,
     title: scene.title,
     content: scene.text,
+    order: scene.order,
     isStartScene: scene.isStartScene,
-    choices: scene.choices.map(mapChoiceFromGraphQL),
-    image: undefined, // à compléter si image_id est exposé
-    audio: undefined, // à compléter si sound_id est exposé
-    position: undefined // à compléter si position est calculée ou stockée
+    choices: scene.choices ? scene.choices.map(mapChoiceFromGraphQL) : [],
+    image: scene.imageId?.url,
+    audio: scene.soundId?.url,
+    music: scene.musicId?.url,
+    position: undefined, // à compléter si position est calculée ou stockée
   };
 }
 function mapChoiceFromGraphQL(choice: any): Choice {
   return {
     id: choice.mongoId,
     text: choice.text,
-    targetSceneId: choice.toSceneId.mongoId,
-    condition: choice.condition // attention : ici c’est un objet JSON, à stringifier si nécessaire
+    targetSceneId: choice.toSceneId?.mongoId || choice.toSceneId || '',
+    condition: choice.condition, // attention : ici c'est un objet JSON, à stringifier si nécessaire
   };
 }
-export { mapScenarioFromGraphQL, mapSceneFromGraphQL, mapChoiceFromGraphQL };
+export { mapChoiceFromGraphQL, mapScenarioFromGraphQL, mapSceneFromGraphQL };
